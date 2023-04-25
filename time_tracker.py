@@ -6,17 +6,17 @@ import datetime
 
 
 # mode = work or study
-global mode
+mode = None
 
 
 def initialise_work_study_log_file():
     try:
         with open("work_study_log.csv", mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(['', 'Predicted Time', 'Actual Time', 'Start Time', 'End Time', 'Comments', 'Diff', 'Status'])
+            writer.writerow(['Work or Study'])
         file.close()
     except:
-        raise FileNotFoundError(f"Could not create {mode}_task_tracker.csv")
+        raise FileNotFoundError(f"Could not create work_study_log.csv")
     return
 
 def initialise_task_tracker_files(mode):
@@ -29,9 +29,6 @@ def initialise_task_tracker_files(mode):
         raise FileNotFoundError(f"Could not create {mode}_task_tracker.csv")
     return
 
-
-
-
 def initialise_time_log_files(mode):
     try:
         with open(f"{mode}_time_log.csv", mode='w', newline='') as file:
@@ -43,7 +40,20 @@ def initialise_time_log_files(mode):
     return
     
 
-    
+def set_mode():
+    global mode
+    if _check_clocked_in():
+        file_rows = []
+        with open("work_study_log.csv", 'r') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                file_rows.append(row)
+        file.close()
+        mode = file_rows[-1][0]
+    else:
+        mode = None
+    return
+
     
 
 
@@ -89,8 +99,6 @@ def check_clocked_in():
 
 def clock_in():
     global mode
-
-
     if _check_clocked_in():
         print("You are already clocked in. Please clock out before clocking in again.")
         return
@@ -100,7 +108,8 @@ def clock_in():
     for i in ["work", "study"]:
         task_tracker_rows = read_task_tracker(i)
         if not task_tracker_rows[-1][5]:
-            work_or_study = mode
+            work_or_study = task_tracker_rows[-1][8]
+
             break
     if not work_or_study:    
         while True:
@@ -114,6 +123,14 @@ def clock_in():
             else:
                 print("Please enter a valid input (0 or 1).")
                 continue
+    mode = work_or_study
+    print(f"Mode set to {mode}.")
+    
+    with open("work_study_log.csv", mode='a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([mode.lower()])
+    file.close()
+    
 
     # Get 'Time Stamp' input
     time_string: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -175,7 +192,7 @@ def add_new_task():
     start_time: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # read work_study_log and append last isntance to end of row
 
-    task_row: List[str] = [task_description, predicted_time, '', start_time, '', '', '', '',]
+    task_row: List[str] = [task_description, predicted_time, '', start_time, '', '', '', '', mode]
     with open(f"{mode}_task_tracker.csv", mode='a', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(task_row)
@@ -246,11 +263,11 @@ def update_current_task(task_tracker_file, current_task):
         raise FileNotFoundError(f"Could not create {mode}_task_tracker.csv")
     return
 
-def cancel_current_task():
+def cancel_task():
     _end_current_task('cancelled')
     return
 
-def complete_current_task():
+def complete_task():
     _end_current_task('completed')
     return
 # {
@@ -264,6 +281,11 @@ def complete_current_task():
 #     7: 'Status'
 # }
 def _end_current_task(status):
+    if not _check_clocked_in():
+        print("You are not clocked in. Please clock in to complete a task.")
+        return
+
+
     global mode
     task_tracker_file: List[List[str]] = read_task_tracker(mode)
     current_task: List[str] = task_tracker_file[-1]
@@ -284,7 +306,7 @@ def _end_current_task(status):
     current_task[5] = input("Please enter a comment: ")
 
     # Get Diff input
-    current_task[6] = str(time_of_task - int(current_task[2]))
+    current_task[6] = str(time_of_task - float(current_task[2]))
 
     current_task[7] = status
 
@@ -301,11 +323,13 @@ if not os.path.exists('work_time_log.csv'):
     initialise_time_log_files('work')
 if not os.path.exists('study_time_log.csv'):
     initialise_time_log_files('study')
+if not os.path.exists('work_study_log.csv'):
+    initialise_work_study_log_file()
     print("Files created\n\n Please start your day by calling clock_in() and enter a new task by calling add_new_task()\n\n")
 
 
-
-list_of_functions: List[str] = ['clock_in()', 'clock_out()', 'add_new_task()', 'cancel_current_task()', 'complete_current_task()', 'add_comment()', 'finish_task()', 'cancel_task()']
+set_mode()
+list_of_functions: List[str] = ['clock_in()', 'clock_out()', 'add_new_task()', 'cancel_task()', 'complete_task()', 'add_comment()', 'finish_task()', 'cancel_task()']
 print("Functions:")
 for function in list_of_functions:
     print(f"    {function}")
