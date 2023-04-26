@@ -224,7 +224,7 @@ def get_log_slice(start_time):
        
 
 def get_task_actual_time(current_task, end_time):
-    start_time = datetime.datetime.strptime(current_task[4], "%Y-%m-%d %H:%M:%S")
+    start_time = datetime.datetime.strptime(current_task[3], "%Y-%m-%d %H:%M:%S")
     time_logs = get_log_slice(start_time)
 
     if not time_logs:
@@ -246,7 +246,7 @@ def get_task_actual_time(current_task, end_time):
             time_logs = time_logs[2 : ]
         else:
             break
-
+    print(task_total_time)
     return task_total_time
 
  
@@ -306,7 +306,7 @@ def _end_current_task(status):
     current_task[5] = input("Please enter a comment: ")
 
     # Get Diff input
-    current_task[6] = str(time_of_task - float(current_task[2]))
+    current_task[6] = str(time_of_task - float(current_task[1]))
 
     current_task[7] = status
 
