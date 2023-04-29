@@ -1,343 +1,285 @@
 import csv
+import json
 from typing import List, Dict, Tuple, Any, Union, Optional
 import os.path
 import datetime
 
 
+def read_file(file_name):
+    with open(f"{file_name}.json", 'r') as f:
+        data = json.load(f)
+    return data
 
-# mode = work or study
-mode = None
 
+def write_file(file_name, data):
+    data = [data]
+    if os.path.exists(f"{file_name}.json"):
+        current_data = read_file(file_name)
+        data = current_data + data
 
-def initialise_work_study_log_file():
-    try:
-        with open("work_study_log.csv", mode='w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(['Work or Study'])
-        file.close()
-    except:
-        raise FileNotFoundError(f"Could not create work_study_log.csv")
+    with open(f"{file_name}.json", 'w') as f:
+        json.dump(data, f)
     return
 
-def initialise_task_tracker_files(mode):
+
+def read_task_tracker(shift_type):
+    if not os.path.exists(f"{shift_type}_task_tracker.json"):
+        return []
     try:
-        with open(f"{mode}_task_tracker.csv", mode='w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(['Task Description', 'Predicted Time', 'Actual Time', 'Start Time', 'End Time', 'Comments', 'Diff', 'Status', 'Work or Study'])
-        file.close()
-    except:
-        raise FileNotFoundError(f"Could not create {mode}_task_tracker.csv")
-    return
+        return read_file(f"{shift_type}_task_tracker")
+    except Exception as e:
+        raise e("Could not open task_tracker file")
 
-def initialise_time_log_files(mode):
+
+def read_time_log(shift_type):
+    if not os.path.exists(f"{shift_type}_time_log.json"):
+        return []
     try:
-        with open(f"{mode}_time_log.csv", mode='w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(['Time Stamp', 'Shift Start or End'])
-        file.close()
-    except:
-        raise FileNotFoundError(f"Could not create {mode}_time_log.csv")
-    return
-    
-
-def set_mode():
-    global mode
-    if _check_clocked_in():
-        file_rows = []
-        with open("work_study_log.csv", 'r') as file:
-            reader = csv.reader(file)
-            for row in reader:
-                file_rows.append(row)
-        file.close()
-        mode = file_rows[-1][0]
-    else:
-        mode = None
-    return
-
-    
+        return read_file(f"{shift_type}_time_log")
+    except Exception as e:
+        raise e("Could not open time_log file")
 
 
-def read_task_tracker(mode):
-    file_rows = []
-    try:
-        with open(f"{mode}_task_tracker.csv", 'r') as file:
-            reader = csv.reader(file)
-            for row in reader:
-                file_rows.append(row)
-        file.close()
-        return file_rows
-    except:
-        raise FileNotFoundError("Could not find task_tracker file")
-    
-def read_time_log(mode):
-    file_rows = []
-    try:
-        with open(f"{mode}_time_log.csv", 'r') as file:
-            reader = csv.reader(file)
-            for row in reader:
-                file_rows.append(row)
-        file.close()
-        return file_rows
-    except:
-        raise FileNotFoundError("Could not find time_log file")
-
-
-# Returns the last line in time_log.csv or False
 def _check_clocked_in():
-    for i in ['work', 'study']:
-        time_log_file: List[List[str]] = read_time_log(i)
-        if time_log_file[-1][1] == 'Start':
-            return i
+    for shift_type in ['work', 'study']:
+        time_log_file: List = read_time_log(shift_type)
+        if time_log_file and time_log_file[-1]["shift_position"] == 'start':
+            return shift_type
     return False
+
 
 def check_clocked_in():
     if _check_clocked_in():
         print("You are clocked in.")
     else:
         print("You are not clocked in.")
-    
+
+
+def _check_active_task(shift_type):
+    task_tracker_data: List = read_task_tracker(shift_type)
+    if task_tracker_data and not task_tracker_data[-1]["end_time"]:
+        return True
+    return False
+
 
 def clock_in():
-    global mode
     if _check_clocked_in():
         print("You are already clocked in. Please clock out before clocking in again.")
         return
-    
-     # Get  'Work or Study' input
-    work_or_study: str = ''
-    for i in ["work", "study"]:
-        task_tracker_rows = read_task_tracker(i)
-        if not task_tracker_rows[-1][5]:
-            work_or_study = task_tracker_rows[-1][8]
 
+    # Get 'shift_type' input
+    shift_type: str = ''
+    for type in ["work", "study"]:
+        if _check_active_task(type):
+            shift_type = type
             break
-    if not work_or_study:    
+
+    if not shift_type:
         while True:
-            user_input = input("Are you working or studying (0: Work, 1: Study)?: ")
+            user_input = input(
+                "Are you working or studying (0: Work, 1: Study)?: ")
             if user_input == '0':
-                work_or_study = 'Work'
+                shift_type = 'work'
                 break
             elif user_input == '1':
-                work_or_study = 'Study'
+                shift_type = 'study'
                 break
             else:
                 print("Please enter a valid input (0 or 1).")
                 continue
-    mode = work_or_study
-    print(f"Mode set to {mode}.")
-    
-    with open("work_study_log.csv", mode='a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow([mode.lower()])
-    file.close()
-    
 
     # Get 'Time Stamp' input
-    time_string: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-    with open(f"{work_or_study}_time_log.csv", mode='a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow([time_string, 'Start'])
-    file.close()
+    time_stamp: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    try:
+        write_file(f"{shift_type}_time_log", {
+                   "time_stamp": time_stamp, "shift_position": "start"})
+    except Exception as e:
+        raise e("Could not write to time_log file")
 
     print("Clocked in.")
-
-    mode = work_or_study
     return
 
 
 def clock_out():
-    global mode
     clocked_in = _check_clocked_in()
     if not clocked_in:
         print("You are not clocked in. Please clock in before clocking out again.")
         return
 
-    # Get 'Time Stamp' input
     time_string: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-    with open(f"{mode}_time_log.csv", mode='a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow([time_string, 'End'])
-    file.close()
+
+    try:
+        write_file(f"{clocked_in}_time_log", {
+                   "time_stamp": time_string, "shift_position": "end"})
+    except Exception as e:
+        raise e("Could not write to time_log file")
 
     print("Clocked out.")
-    
-    mode = None
     return
 
 
-
-
-
-
-
 def add_new_task():
-    global mode
-    clocked_in = _check_clocked_in()
-    if not clocked_in:
+    shift_type = _check_clocked_in()
+    if not shift_type:
         print("You are not clocked in. Please clock in to add a new task.")
         return
-    
+
+    if _check_active_task(shift_type):
+        print("You already have an active task. Please complete the task before adding a new one.")
+        return
+
     task_description = input("Enter task description: ")
 
     while True:
         predicted_time = input("Enter predicted time (in minutes): ")
         try:
-            # TODO: check if valid input by converting to integer and back to string
+            predicted_time = float(predicted_time)
             break
         except:
-            break
-             
-    start_time: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # read work_study_log and append last isntance to end of row
+            print("Please enter a valid number.")
+            continue
 
-    task_row: List[str] = [task_description, predicted_time, '', start_time, '', '', '', '', mode]
-    with open(f"{mode}_task_tracker.csv", mode='a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(task_row)
-    file.close()
-    print(f"New task added: {task_row}")
+    start_time: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    task: Dict = {
+        "task_description": task_description,
+        "predicted_time": predicted_time,
+        "start_time": start_time,
+        "shift_type": shift_type,
+        "actual_time": None,
+        "end_time": None,
+        "comments": None,
+        "time_difference": None,
+        "status": None,
+    }
+    try:
+        write_file(f"{shift_type}_task_tracker", task)
+    except Exception as e:
+        raise e("Could not write to task_tracker file")
+
+    print(f"New task added: {task}")
     return
 
-
 # log has to be a clock out
-def find_next_log(time_log_file, comparison_time):
-    for i in range(len(time_log_file))[::-1]:
-        if datetime.datetime.strptime(time_log_file[i][0], "%Y-%m-%d %H:%M:%S") >= comparison_time:
+
+
+def _find_next_log(time_log_data, comparison_time):
+    for i in range(len(time_log_data))[::-1]:
+        if datetime.datetime.strptime(time_log_data[i]["time_stamp"], "%Y-%m-%d %H:%M:%S") >= comparison_time:
             continue
-        elif i + 1 > (len(time_log_file) - 1):
+        elif i + 1 > (len(time_log_data) - 1):
             return None
         else:
             return i + 1
-        
-def get_log_slice(start_time):
-    global mode
-    time_log_file: List[List[str]] = read_time_log(mode)
 
-    first_log_index = find_next_log(time_log_file, start_time)
+
+def _get_log_slice(start_time, shift_type):
+    time_log_data: List = read_time_log(shift_type)
+
+    first_log_index = _find_next_log(time_log_data, start_time)
     if not first_log_index:
         return None
 
-    return time_log_file[first_log_index : ]
-    
-       
+    return time_log_data[first_log_index:]
 
-def get_task_actual_time(current_task, end_time):
-    start_time = datetime.datetime.strptime(current_task[3], "%Y-%m-%d %H:%M:%S")
-    time_logs = get_log_slice(start_time)
+
+def _get_task_actual_time(current_task, end_time, shift_type):
+    start_time = datetime.datetime.strptime(
+        current_task["start_time"], "%Y-%m-%d %H:%M:%S")
+    time_logs = _get_log_slice(start_time, shift_type)
 
     if not time_logs:
         return (end_time - start_time).seconds / 60
-    
+
     task_total_time = 0
 
     # first clock out
-    task_total_time = (datetime.datetime.strptime(time_logs[0][0], "%Y-%m-%d %H:%M:%S") - start_time).seconds / 60
-    time_logs = time_logs[1 : ]
+    task_total_time = (datetime.datetime.strptime(
+        time_logs[0]["time_stamp"], "%Y-%m-%d %H:%M:%S") - start_time).seconds / 60
+    time_logs = time_logs[1:]
 
     # last clock in
-    task_total_time = (end_time - datetime.datetime.strptime(time_logs[-1][0], "%Y-%m-%d %H:%M:%S")).seconds / 60
-    time_logs = time_logs[ : -1]
+    task_total_time = (end_time - datetime.datetime.strptime(
+        time_logs[-1]["time_stamp"], "%Y-%m-%d %H:%M:%S")).seconds / 60
+    time_logs = time_logs[: -1]
 
     while True:
         if len(time_logs) > 0:
-            task_total_time = (datetime.datetime.strptime(time_logs[1][0], "%Y-%m-%d %H:%M:%S") - datetime.datetime.strptime(time_logs[0][0], "%Y-%m-%d %H:%M:%S")).seconds / 60
-            time_logs = time_logs[2 : ]
+            task_total_time = (datetime.datetime.strptime(time_logs[1]["time_stamp"], "%Y-%m-%d %H:%M:%S") - datetime.datetime.strptime(
+                time_logs[0]["time_stamp"], "%Y-%m-%d %H:%M:%S")).seconds / 60
+            time_logs = time_logs[2:]
         else:
             break
-    print(task_total_time)
+
     return task_total_time
 
- 
-def update_current_task(task_tracker_file, current_task):
-    global mode
+
+def _update_current_task(updated_task_tracker_data, shift_type):
     try:
-        with open(f"{mode}_task_tracker.csv", mode='w', newline='') as file:
-            writer = csv.writer(file)
-            for row in task_tracker_file[:-1]:
-                writer.writerow(row)
-            writer.writerow(current_task)
-        file.close()
-    except:
-        raise FileNotFoundError(f"Could not create {mode}_task_tracker.csv")
+        with open(f"{shift_type}_task_tracker.json", 'w') as f:
+            json.dump(updated_task_tracker_data, f)
+    except Exception as e:
+        raise e(f"Could not update {shift_type}_task_tracker file")
     return
+
+
+def _end_current_task(status):
+    shift_type = _check_clocked_in()
+
+    if not shift_type:
+        print("You are not clocked in. Please clock in to complete a task.")
+        return
+
+    task_tracker_data: List = read_task_tracker(shift_type)
+
+    if not task_tracker_data:
+        print("You do not currently have an open task. Please call add_new_task() to create a task.")
+        return
+
+    current_task: Dict = task_tracker_data[-1]
+
+    if current_task["end_time"]:
+        print("You do not currently have an open task. Please call add_new_task() to create a task.")
+        return
+
+    # Get 'end_time' input
+    end_time = datetime.datetime.now()
+    current_task["end_time"] = end_time.strftime("%Y-%m-%d %H:%M:%S")
+
+    # Get 'actual_time' input
+    time_of_task = _get_task_actual_time(current_task, end_time, shift_type)
+    current_task["actual_time"] = time_of_task
+
+    # Get 'comments' input
+    current_task["comments"] = input("Please enter a comment: ")
+
+    # Get 'time_difference' input
+    current_task["time_difference"] = time_of_task - \
+        current_task["predicted_time"]
+
+    current_task["status"] = status
+
+    updated_task_tracker_data = task_tracker_data[:-1] + [current_task]
+    _update_current_task(updated_task_tracker_data, shift_type)
+
+    print(f"Task updated: {current_task}")
+    return
+
 
 def cancel_task():
     _end_current_task('cancelled')
     return
 
+
 def complete_task():
     _end_current_task('completed')
     return
-# {
-#     0: 'Task Description', 
-#     1: 'Predicted Time',
-#     2: 'Actual Time',
-#     3: 'Start Time',
-#     4: 'End Time',
-#     5: 'Comments',
-#     6: 'Diff', 
-#     7: 'Status'
-# }
-def _end_current_task(status):
-    if not _check_clocked_in():
-        print("You are not clocked in. Please clock in to complete a task.")
-        return
 
 
-    global mode
-    task_tracker_file: List[List[str]] = read_task_tracker(mode)
-    current_task: List[str] = task_tracker_file[-1]
-
-    if current_task[5]:
-        print("You do not currently have an open task. Please call add_new_task() to create a task.")
-        return
-    
-    # Get End Time input
-    end_time = datetime.datetime.now()
-    current_task[4] = end_time.strftime("%Y-%m-%d %H:%M:%S")
-
-    # Get Actual Time input
-    time_of_task = get_task_actual_time(current_task, end_time)
-    current_task[2] = time_of_task
-
-    # Get Comments input
-    current_task[5] = input("Please enter a comment: ")
-
-    # Get Diff input
-    current_task[6] = str(time_of_task - float(current_task[1]))
-
-    current_task[7] = status
-
-    update_current_task(task_tracker_file, current_task)
-    print(current_task)
-
-
-
-if not os.path.exists('work_task_tracker.csv'):
-    initialise_task_tracker_files('work')
-if not os.path.exists('study_task_tracker.csv'):
-    initialise_task_tracker_files('study')    
-if not os.path.exists('work_time_log.csv'):
-    initialise_time_log_files('work')
-if not os.path.exists('study_time_log.csv'):
-    initialise_time_log_files('study')
-if not os.path.exists('work_study_log.csv'):
-    initialise_work_study_log_file()
-    print("Files created\n\n Please start your day by calling clock_in() and enter a new task by calling add_new_task()\n\n")
-
-
-set_mode()
-list_of_functions: List[str] = ['clock_in()', 'clock_out()', 'add_new_task()', 'cancel_task()', 'complete_task()', 'add_comment()', 'finish_task()', 'cancel_task()']
-print("Functions:")
-for function in list_of_functions:
-    print(f"    {function}")
-while True:
-    user_input = input("Enter a function: ")
-    try:
-        list_of_functions.index(user_input)
-        exec(f"{user_input}")
-    except ValueError:
-        print("Please enter a valid function name.")
-        continue
+def help():
+    list_of_functions: List[str] = [
+        'clock_in()', 'clock_out()', 'add_new_task()', 'cancel_task()', 'complete_task()']
+    print("Functions:")
+    for function in list_of_functions:
+        print(f"    {function}")
