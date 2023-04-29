@@ -279,7 +279,7 @@ def complete_task():
 
 def help():
     list_of_functions: List[str] = [
-        'clock_in()', 'clock_out()', 'add_new_task()', 'cancel_task()', 'complete_task()', 'read_task_tracker()', 'read_time_log()']
+        'clock_in()', 'clock_out()', 'check_clocked_in()', 'add_new_task()', 'cancel_task()', 'complete_task()', 'read_task_tracker()', 'read_time_log()']
     print("Functions:")
     for function in list_of_functions:
         print(f"    {function}")
