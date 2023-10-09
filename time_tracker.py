@@ -216,7 +216,6 @@ def _update_current_task(updated_task_tracker_data, shift_type):
             dump(updated_task_tracker_data, f)
     except Exception as e:
         raise Exception(f"Could not update {shift_type}_task_tracker file: {e}")
-    return
 
 
 def _end_current_task(status):
