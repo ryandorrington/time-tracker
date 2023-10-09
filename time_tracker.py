@@ -41,7 +41,7 @@ def read_time_log(shift_type):
 
 
 def _check_clocked_in():
-    for shift_type in ['work', 'study']:
+    for shift_type in ['tinyplan']:
         time_log_file: List = read_time_log(shift_type)
         if time_log_file and time_log_file[-1]["shift_position"] == 'start':
             return shift_type
@@ -68,25 +68,20 @@ def clock_in():
         return
 
     # Get 'shift_type' input
-    shift_type: str = ''
-    for type in ["work", "study"]:
-        if _check_active_task(type):
-            shift_type = type
-            break
+    shift_type: str = "tinyplan"
 
-    if not shift_type:
-        while True:
-            user_input = input(
-                "Are you working or studying (0: Work, 1: Study)?: ")
-            if user_input == '0':
-                shift_type = 'work'
-                break
-            elif user_input == '1':
-                shift_type = 'study'
-                break
-            else:
-                print("Please enter a valid input (0 or 1).")
-                continue
+    while True:
+        user_input = input(
+            "Are you motivated (1: Yes, 0: No)?: ")
+        if user_input == '0':
+            print("Spend 3 minutes visualising what life will be like if you fail.")
+            break
+        elif user_input == '1':
+            print("Spend 3 minutes visualising what life will be like when you are an employee at tinycorp.")
+            break
+        else:
+            print("Please enter a valid input (0 or 1).")
+            continue
 
     # Get 'Time Stamp' input
     time_stamp: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -150,6 +145,7 @@ def add_new_task():
         "actual_time": None,
         "end_time": None,
         "comments": None,
+        "level_of_focus": None,
         "time_difference": None,
         "status": None,
     }
@@ -253,6 +249,9 @@ def _end_current_task(status):
 
     # Get 'comments' input
     current_task["comments"] = input("Please enter a comment: ")
+
+    # Get 'level_of_focus' input
+    current_task["level_of_focus"] = input("Please enter your level of focus (0-9): ")
 
     # Get 'time_difference' input
     current_task["time_difference"] = time_of_task - \
