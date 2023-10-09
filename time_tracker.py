@@ -71,13 +71,14 @@ def clock_in():
     shift_type: str = "tinyplan"
 
     while True:
+        input("Focus on a point on your keyboard for 30 seconds")
         user_input = input(
             "Are you motivated (1: Yes, 0: No)?: ")
         if user_input == '0':
-            print("Spend 3 minutes visualising what life will be like if you fail.")
+            input("Spend 3 minutes visualising what life will be like if you fail.")
             break
         elif user_input == '1':
-            print("Spend 3 minutes visualising what life will be like when you are an employee at tinycorp.")
+            input("Spend 3 minutes visualising what life will be like when you are an employee at tinycorp.")
             break
         else:
             print("Please enter a valid input (0 or 1).")
