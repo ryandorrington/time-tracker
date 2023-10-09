@@ -1,13 +1,12 @@
-import csv
-import json
-from typing import List, Dict, Tuple, Any, Union, Optional
+from json import load, dump
+from typing import List, Dict
 import os.path
 import datetime
 
 
 def _read_file(file_name):
-    with open(f"{file_name}.json", 'r') as f:
-        data = json.load(f)
+    with open(f"{file_name}.json", 'r', encoding='utf-8') as f:
+        data = load(f)
     return data
 
 
@@ -17,9 +16,8 @@ def _write_file(file_name, data):
         current_data = _read_file(file_name)
         data = current_data + data
 
-    with open(f"{file_name}.json", 'w') as f:
-        json.dump(data, f)
-    return
+    with open(f"{file_name}.json", 'w', encoding='utf-8') as f:
+        dump(data, f)
 
 
 def read_task_tracker(shift_type):
@@ -28,7 +26,7 @@ def read_task_tracker(shift_type):
     try:
         return _read_file(f"{shift_type}_task_tracker")
     except Exception as e:
-        raise e("Could not open task_tracker file")
+        raise  Exception(f"Could not open task_tracker file: {e}")
 
 
 def read_time_log(shift_type):
@@ -37,7 +35,7 @@ def read_time_log(shift_type):
     try:
         return _read_file(f"{shift_type}_time_log")
     except Exception as e:
-        raise e("Could not open time_log file")
+        raise Exception(f"Could not open time_log file: {e}")
 
 
 def _check_clocked_in():
@@ -91,7 +89,7 @@ def clock_in():
         _write_file(f"{shift_type}_time_log", {
                    "time_stamp": time_stamp, "shift_position": "start"})
     except Exception as e:
-        raise e("Could not write to time_log file")
+        raise Exception(f"Could not write to time_log file: {e}")
 
     print("Clocked in.")
     return
@@ -109,7 +107,7 @@ def clock_out():
         _write_file(f"{clocked_in}_time_log", {
                    "time_stamp": time_string, "shift_position": "end"})
     except Exception as e:
-        raise e("Could not write to time_log file")
+        raise Exception(f"Could not write to time_log file: {e}")
 
     print("Clocked out.")
     return
@@ -153,7 +151,7 @@ def add_new_task():
     try:
         _write_file(f"{shift_type}_task_tracker", task)
     except Exception as e:
-        raise e("Could not write to task_tracker file")
+        raise Exception(f"Could not write to task_tracker file: {e}")
 
     print(f"New task added: {task}")
     return
@@ -214,10 +212,10 @@ def _get_task_actual_time(current_task, end_time, shift_type):
 
 def _update_current_task(updated_task_tracker_data, shift_type):
     try:
-        with open(f"{shift_type}_task_tracker.json", 'w') as f:
-            json.dump(updated_task_tracker_data, f)
+        with open(f"{shift_type}_task_tracker.json", 'w', encoding='utf-8') as f:
+            dump(updated_task_tracker_data, f)
     except Exception as e:
-        raise e(f"Could not update {shift_type}_task_tracker file")
+        raise Exception(f"Could not update {shift_type}_task_tracker file: {e}")
     return
 
 
@@ -279,7 +277,15 @@ def complete_task():
 
 def help():
     list_of_functions: List[str] = [
-        'clock_in()', 'clock_out()', 'check_clocked_in()', 'add_new_task()', 'cancel_task()', 'complete_task()', 'read_task_tracker()', 'read_time_log()']
+        'clock_in()',
+        'clock_out()',
+        'check_clocked_in()',
+        'add_new_task()',
+        'cancel_task()',
+        'complete_task()',
+        'read_task_tracker()',
+        'read_time_log()'
+    ]
     print("Functions:")
     for function in list_of_functions:
         print(f"    {function}")
