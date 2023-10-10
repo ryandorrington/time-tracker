@@ -2,6 +2,7 @@ from json import load, dump
 from typing import List, Dict
 import os.path
 import datetime
+import random
 
 
 def _read_file(file_name):
@@ -69,7 +70,7 @@ def clock_in():
     shift_type: str = "tinyplan"
 
     while True:
-        input("Focus on a point on your keyboard for 30 seconds")
+        input("Focus on a point on your keyboard for 30 seconds.")
         user_input = input(
             "Are you motivated (1: Yes, 0: No)?: ")
         if user_input == '0':
@@ -271,6 +272,7 @@ def cancel_task():
 
 def complete_task():
     _end_current_task('completed')
+    if random.randint(1, 3) == 1: input("Well done! have a piece of gum.")
     return
 
 
