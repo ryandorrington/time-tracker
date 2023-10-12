@@ -9,7 +9,7 @@ Track time and tasks
 3. clone repository:  
   ```
   git clone https://github.com/ryandorrington/time-tracker.git
-  cd time_tracker
+  cd time-tracker
   ```
 4. run:
   ```
