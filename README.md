@@ -1,5 +1,5 @@
 # time-tracker
-Track time and tasks
+A simple productivity tool to help track task completion and your productivity stats.
 
 
 ## How to run:
